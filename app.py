@@ -1,4 +1,4 @@
-from flask import Flask,request
+from flask import Flask,request, render_template, url_for, redirect
 import os
 import sqlite3
 from flask_restful import Resource, Api
@@ -153,6 +153,60 @@ class NewUser(Resource):
             db.commit()
             db.close()
             return {"note":"new user created"}
+
+#################################################################
+
+@app.route("/admin")
+def admin():
+    db = get_db()
+    cursor = db.execute("SELECT COUNT(username) FROM users")
+    user_count = cursor.fetchone()["COUNT(username)"]
+    cursor = db.execute("SELECT COUNT(title) FROM posts")
+    post_count = cursor.fetchone()["COUNT(title)"]
+    cursor = db.execute("SELECT * FROM posts")
+    posts = cursor.fetchall()
+    cursor = db.execute("SELECT * FROM users")
+    users = cursor.fetchall()
+    db.close()
+    return render_template("admin.html", user_count=user_count, post_count=post_count)
+
+@app.route("/users_page", methods=["GET","POST"])
+def users_page():
+    db = get_db()
+    cursor = db.execute("SELECT * FROM users")
+    users = cursor.fetchall()
+    db.close()
+    return render_template("users.html", users=users)
+
+@app.route("/posts_page")
+def posts_page():
+    db = get_db()
+    cursor = db.execute("SELECT * FROM posts")
+    posts = cursor.fetchall()
+    db.close()
+    return render_template("posts.html", posts=posts)
+
+@app.route("/delete_user", methods=["GET","POST"])
+def delete_user():
+
+    id = request.args.get("id")
+    db = get_db()
+    cursor = db.execute("DELETE FROM users WHERE id = ?",(id,))
+    db.commit()
+    db.close()
+    return redirect(url_for("users_page"))
+
+@app.route("/delete_post", methods=["GET","POST"])
+def delete_post():
+
+    id = request.args.get("id")
+    db = get_db()
+    cursor = db.execute("DELETE FROM posts WHERE id = ?",(id,))
+    db.commit()
+    db.close()
+    return redirect(url_for("posts_page"))
+
+
 
 api.add_resource(IndivPosts,"/post/<int:id>")
 api.add_resource(CreatePosts,"/create")
